@@ -19,18 +19,28 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Install SDK packages
-        run: sdkmanager --install "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
 
-      - name: Build APK
+      - name: Find Android project
+        id: project
+        shell: bash
         run: |
           if [ -f gradlew ]; then
-            chmod +x gradlew
-            ./gradlew assembleDebug
+            echo "dir=." >> "$GITHUB_OUTPUT"
+          elif [ -f "档案馆Android项目/gradlew" ]; then
+            echo "dir=档案馆Android项目" >> "$GITHUB_OUTPUT"
           else
-            echo "No Gradle wrapper found in repository root."
+            echo "未找到 gradlew 构建脚本。"
+            find . -maxdepth 4 \( -name gradlew -o -name settings.gradle -o -name settings.gradle.kts \) -print
             exit 1
           fi
+
+      - name: Build APK
+        working-directory: ${{ steps.project.outputs.dir }}
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
